@@ -1,0 +1,11 @@
+.git
+.github
+.vscode
+.idea
+.dart_tool
+.packages
+.pub-cache
+build
+node_modules
+.gitignore
+README.md
