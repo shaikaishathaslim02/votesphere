@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1
 
-FROM ghcr.io/cirruslabs/flutter:3.24.2 AS build
+FROM ghcr.io/cirruslabs/flutter:3.47.7 AS build
 WORKDIR /app
 
 COPY pubspec.yaml pubspec.lock* ./

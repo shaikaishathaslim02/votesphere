@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../models/poll.dart';
 import '../services/poll_service.dart';
 import '../widgets/page_frame.dart';
@@ -49,7 +50,7 @@ class _DashboardState extends State<DashboardScreen> {
           const SizedBox(width: 14),
           const Expanded(child: Column(crossAxisAlignment: CrossAxisAlignment.start, children: [Text('ROOM CODE', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)), Text('Share this code with participants', style: TextStyle(color: Colors.black54))])),
           SelectableText(poll.roomCode, style: const TextStyle(fontSize: 26, fontWeight: FontWeight.bold, color: Color(0xff3857d6))),
-          IconButton(onPressed: () => ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Room code copied'))), icon: const Icon(Icons.copy)),
+          IconButton(onPressed: () async { await Clipboard.setData(ClipboardData(text: poll.roomCode)); if (mounted) ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Room code copied'))); }, icon: const Icon(Icons.copy)),
         ]))),
         const SizedBox(height: 16),
         LayoutBuilder(builder: (context, box) => Wrap(spacing: 12, runSpacing: 12, children: [
@@ -62,7 +63,7 @@ class _DashboardState extends State<DashboardScreen> {
         const SizedBox(height: 8),
         for (final candidate in poll.candidates) _candidateProgress(candidate, poll.totalVotes),
         const SizedBox(height: 18),
-        FilledButton.icon(onPressed: poll.status == PollStatus.published ? null : () { widget.service.publish(poll); setState(() {}); }, icon: const Icon(Icons.campaign_outlined), label: Text(poll.status == PollStatus.published ? 'Results Published' : 'Publish Results')),
+        FilledButton.icon(onPressed: poll.status == PollStatus.published ? null : () async { final issue = await widget.service.publish(poll); if (!mounted) return; if (issue != null) { ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(issue))); } else { setState(() {}); } }, icon: const Icon(Icons.campaign_outlined), label: Text(poll.status == PollStatus.published ? 'Results Published' : 'Publish Results')),
         OutlinedButton.icon(onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => ResultsScreen(poll: poll))), icon: const Icon(Icons.poll_outlined), label: const Text('View Full Results')),
       ]),
     );

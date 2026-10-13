@@ -2,14 +2,27 @@ import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/poll.dart';
 
 class PollService extends ChangeNotifier {
   final Map<String, Poll> _polls = {};
   final Set<String> _remotePolls = {};
   Poll? _latestCreatedPoll;
-  final String participantId = 'demo-browser-participant';
+  String participantId = 'pending-participant';
+  late final Future<void> _identityReady = _loadParticipantId();
   Poll? get latestCreatedPoll => _latestCreatedPoll;
+
+  Future<void> _loadParticipantId() async {
+    final preferences = await SharedPreferences.getInstance();
+    var id = preferences.getString('votesphere_participant_id');
+    if (id == null || id.isEmpty) {
+      id = 'participant-${DateTime.now().microsecondsSinceEpoch}-${Random().nextInt(1000000)}';
+      await preferences.setString('votesphere_participant_id', id);
+    }
+    participantId = id;
+    notifyListeners();
+  }
 
   Uri _url(String path) => Uri.parse('${const String.fromEnvironment('API_BASE_URL', defaultValue: '')}${const String.fromEnvironment('API_BASE_URL', defaultValue: '').isEmpty ? Uri.base.origin : ''}/api$path');
 
@@ -40,6 +53,7 @@ class PollService extends ChangeNotifier {
   }
 
   Future<String?> submitVote(Poll poll, String candidateId) async {
+    await _identityReady;
     if (_remotePolls.contains(poll.id)) {
       try { final response = await http.post(_url('/${poll.roomCode}/votes'), headers: {'Content-Type': 'application/json'}, body: jsonEncode({'candidateId': candidateId, 'voterId': participantId})); if (response.statusCode == 201) { poll.voters.add(participantId); notifyListeners(); return null; } final body = jsonDecode(response.body); return body['error'] ?? 'Vote could not be recorded.'; } catch (_) { return 'Backend is unavailable. Please try again.'; }
     }
